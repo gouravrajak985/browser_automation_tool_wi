@@ -5,7 +5,7 @@ import pickle
 import threading
 import time
 from datetime import datetime
-from automation_script import run_automation, start_manual_login, save_cookies_and_run
+from automation_script import run_automation, start_manual_login, save_cookies_and_run, running_tasks
 import json
 
 app = Flask(__name__)
@@ -14,9 +14,6 @@ CORS(app)
 # Ensure directories exist
 os.makedirs('cookies', exist_ok=True)
 os.makedirs('logs', exist_ok=True)
-
-# Store running tasks with detailed status
-running_tasks = {}
 
 @app.route('/api/run', methods=['POST'])
 def run_automation_endpoint():
@@ -41,38 +38,31 @@ def run_automation_endpoint():
                         'progress': 0,
                         'current_member': None,
                         'current_family': None,
-                        'console_logs': ['System initialized', 'Loading session cookies...']
+                        'console_logs': ['🚀 System initialized', '🔐 Loading session cookies...']
                     }
                     
                     # Update status to running
                     running_tasks[task_id]['status'] = 'running'
-                    running_tasks[task_id]['progress'] = 10
-                    running_tasks[task_id]['console_logs'].append('Automation sequence started')
+                    running_tasks[task_id]['progress'] = 5
+                    running_tasks[task_id]['console_logs'].append('⚡ Automation sequence started')
                     
-                    result = run_automation(cookie_name, start_row, end_row)
+                    result = run_automation(cookie_name, start_row, end_row, task_id)
                     
-                    running_tasks[task_id] = {
-                        'status': 'completed',
-                        'start_time': running_tasks[task_id]['start_time'],
-                        'end_time': datetime.now().isoformat(),
-                        'result': result,
-                        'progress': 100,
-                        'console_logs': running_tasks[task_id]['console_logs'] + [
-                            f'Automation completed successfully',
-                            f'Total processed: {result["total_processed"]}',
-                            f'Successful: {result["success_count"]}',
-                            f'Failed: {result["fail_count"]}'
-                        ]
-                    }
+                    running_tasks[task_id]['status'] = 'completed'
+                    running_tasks[task_id]['end_time'] = datetime.now().isoformat()
+                    running_tasks[task_id]['result'] = result
+                    running_tasks[task_id]['progress'] = 100
+                    running_tasks[task_id]['console_logs'].append('🎉 Automation completed successfully!')
+                    running_tasks[task_id]['console_logs'].append(f'📊 Total processed: {result["total_processed"]}')
+                    running_tasks[task_id]['console_logs'].append(f'✅ Successful: {result["success_count"]}')
+                    running_tasks[task_id]['console_logs'].append(f'⚠️ Failed: {result["fail_count"]}')
+                    
                 except Exception as e:
-                    running_tasks[task_id] = {
-                        'status': 'failed',
-                        'start_time': running_tasks[task_id]['start_time'],
-                        'end_time': datetime.now().isoformat(),
-                        'error': str(e),
-                        'progress': 0,
-                        'console_logs': running_tasks[task_id]['console_logs'] + [f'Error: {str(e)}']
-                    }
+                    running_tasks[task_id]['status'] = 'failed'
+                    running_tasks[task_id]['end_time'] = datetime.now().isoformat()
+                    running_tasks[task_id]['error'] = str(e)
+                    running_tasks[task_id]['progress'] = 0
+                    running_tasks[task_id]['console_logs'].append(f'❌ Error: {str(e)}')
             
             thread = threading.Thread(target=run_task)
             thread.start()
@@ -123,35 +113,28 @@ def save_cookies():
                 running_tasks[task_id] = {
                     'status': 'saving_cookies',
                     'start_time': datetime.now().isoformat(),
-                    'progress': 10,
-                    'console_logs': ['Saving authentication session...']
+                    'progress': 5,
+                    'console_logs': ['💾 Saving authentication session...']
                 }
                 
-                result = save_cookies_and_run(cookie_name, start_row, end_row)
+                result = save_cookies_and_run(cookie_name, start_row, end_row, task_id)
                 
-                running_tasks[task_id] = {
-                    'status': 'completed',
-                    'start_time': running_tasks[task_id]['start_time'],
-                    'end_time': datetime.now().isoformat(),
-                    'result': result,
-                    'progress': 100,
-                    'console_logs': running_tasks[task_id]['console_logs'] + [
-                        'Session saved successfully',
-                        'Automation completed',
-                        f'Total processed: {result["total_processed"]}',
-                        f'Successful: {result["success_count"]}',
-                        f'Failed: {result["fail_count"]}'
-                    ]
-                }
+                running_tasks[task_id]['status'] = 'completed'
+                running_tasks[task_id]['end_time'] = datetime.now().isoformat()
+                running_tasks[task_id]['result'] = result
+                running_tasks[task_id]['progress'] = 100
+                running_tasks[task_id]['console_logs'].append('✅ Session saved successfully')
+                running_tasks[task_id]['console_logs'].append('🎉 Automation completed')
+                running_tasks[task_id]['console_logs'].append(f'📊 Total processed: {result["total_processed"]}')
+                running_tasks[task_id]['console_logs'].append(f'✅ Successful: {result["success_count"]}')
+                running_tasks[task_id]['console_logs'].append(f'⚠️ Failed: {result["fail_count"]}')
+                
             except Exception as e:
-                running_tasks[task_id] = {
-                    'status': 'failed',
-                    'start_time': running_tasks[task_id]['start_time'],
-                    'end_time': datetime.now().isoformat(),
-                    'error': str(e),
-                    'progress': 0,
-                    'console_logs': running_tasks[task_id]['console_logs'] + [f'Error: {str(e)}']
-                }
+                running_tasks[task_id]['status'] = 'failed'
+                running_tasks[task_id]['end_time'] = datetime.now().isoformat()
+                running_tasks[task_id]['error'] = str(e)
+                running_tasks[task_id]['progress'] = 0
+                running_tasks[task_id]['console_logs'].append(f'❌ Error: {str(e)}')
         
         thread = threading.Thread(target=run_task)
         thread.start()

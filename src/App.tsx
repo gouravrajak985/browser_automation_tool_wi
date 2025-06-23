@@ -75,31 +75,52 @@ function App() {
           const response = await axios.get(`${API_BASE}/task_status/${taskId}`);
           setTaskStatus(response.data);
           
-          // Add console logs based on status
+          // Add new console logs from backend
+          if (response.data.console_logs && Array.isArray(response.data.console_logs)) {
+            const newLogs = response.data.console_logs.slice(consoleLogs.length);
+            newLogs.forEach((logMessage: string) => {
+              // Determine log type based on message content
+              let logType: 'info' | 'success' | 'error' | 'warning' = 'info';
+              if (logMessage.includes('✅') || logMessage.includes('🎉')) {
+                logType = 'success';
+              } else if (logMessage.includes('❌') || logMessage.includes('⚠️')) {
+                logType = 'error';
+              } else if (logMessage.includes('🔍') || logMessage.includes('📝')) {
+                logType = 'warning';
+              }
+              
+              addConsoleLog(logType, logMessage);
+            });
+          }
+          
+          // Add current processing info
           if (response.data.current_member && response.data.current_family) {
-            addConsoleLog('info', `Processing Member ID: ${response.data.current_member} | Family ID: ${response.data.current_family}`);
+            const currentInfo = `Processing Member ID: ${response.data.current_member} | Family ID: ${response.data.current_family}`;
+            if (!consoleLogs.some(log => log.message.includes(currentInfo))) {
+              addConsoleLog('info', `🔄 ${currentInfo}`);
+            }
           }
           
           if (response.data.status === 'completed') {
             setIsRunning(false);
-            addConsoleLog('success', `Automation completed successfully! Processed ${response.data.result?.total_processed || 0} members.`);
-            addConsoleLog('success', `Success: ${response.data.result?.success_count || 0} | Failed: ${response.data.result?.fail_count || 0}`);
+            addConsoleLog('success', `🎉 Automation completed successfully! Processed ${response.data.result?.total_processed || 0} members.`);
+            addConsoleLog('success', `📊 Success: ${response.data.result?.success_count || 0} | Failed: ${response.data.result?.fail_count || 0}`);
             fetchLogs();
           } else if (response.data.status === 'failed') {
             setIsRunning(false);
-            addConsoleLog('error', `Automation failed: ${response.data.error}`);
+            addConsoleLog('error', `❌ Automation failed: ${response.data.error}`);
           }
         } catch (error) {
           console.error('Error fetching task status:', error);
-          addConsoleLog('error', 'Failed to fetch task status');
+          addConsoleLog('error', '❌ Failed to fetch task status');
         }
-      }, 2000);
+      }, 1000); // Check every second for more responsive updates
     }
     
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isRunning, taskId]);
+  }, [isRunning, taskId, consoleLogs.length]);
 
   const addConsoleLog = (type: 'info' | 'success' | 'error' | 'warning', message: string) => {
     const newLog: ConsoleLog = {
@@ -107,7 +128,13 @@ function App() {
       type,
       message
     };
-    setConsoleLogs(prev => [...prev.slice(-49), newLog]); // Keep last 50 logs
+    setConsoleLogs(prev => {
+      // Avoid duplicate messages
+      if (prev.some(log => log.message === message && log.timestamp === newLog.timestamp)) {
+        return prev;
+      }
+      return [...prev.slice(-99), newLog]; // Keep last 100 logs
+    });
   };
 
   const fetchLogs = async () => {
@@ -116,7 +143,7 @@ function App() {
       setLogs(response.data);
     } catch (error) {
       console.error('Error fetching logs:', error);
-      addConsoleLog('error', 'Failed to fetch log files');
+      addConsoleLog('error', '❌ Failed to fetch log files');
     }
   };
 
@@ -126,20 +153,21 @@ function App() {
       setCookies(response.data);
     } catch (error) {
       console.error('Error fetching cookies:', error);
-      addConsoleLog('error', 'Failed to fetch session data');
+      addConsoleLog('error', '❌ Failed to fetch session data');
     }
   };
 
   const handleRun = async () => {
     if (!cookieName.trim() || startRow >= endRow) {
-      addConsoleLog('error', 'Invalid input parameters. Please check your configuration.');
+      addConsoleLog('error', '❌ Invalid input parameters. Please check your configuration.');
       return;
     }
 
     try {
       setIsRunning(true);
-      addConsoleLog('info', `Initiating automation for session: ${cookieName}`);
-      addConsoleLog('info', `Processing rows ${startRow} to ${endRow}`);
+      setConsoleLogs([]); // Clear previous logs
+      addConsoleLog('info', `🚀 Initiating automation for session: ${cookieName}`);
+      addConsoleLog('info', `📊 Processing rows ${startRow} to ${endRow}`);
       
       const response = await axios.post(`${API_BASE}/run`, {
         start_row: startRow,
@@ -150,59 +178,59 @@ function App() {
       if (response.data.status === 'started') {
         setTaskId(response.data.task_id);
         setTaskStatus({ status: 'running', progress: 0 });
-        addConsoleLog('success', 'Automation task started successfully');
+        addConsoleLog('success', '✅ Automation task started successfully');
       } else if (response.data.status === 'login_required') {
         setLoginParams({ start_row: startRow, end_row: endRow, cookie_name: cookieName.trim() });
         setShowLoginModal(true);
         setIsRunning(false);
-        addConsoleLog('warning', 'Session not found. Manual login required.');
+        addConsoleLog('warning', '⚠️ Session not found. Manual login required.');
       }
     } catch (error) {
       console.error('Error starting automation:', error);
       setIsRunning(false);
-      addConsoleLog('error', 'Failed to start automation task');
+      addConsoleLog('error', '❌ Failed to start automation task');
     }
   };
 
   const handleManualLogin = async () => {
     try {
-      addConsoleLog('info', 'Opening browser for manual authentication...');
+      addConsoleLog('info', '🌐 Opening browser for manual authentication...');
       const response = await axios.get(`${API_BASE}/login`, {
         params: loginParams
       });
       
       if (response.data.status === 'browser_opened') {
-        addConsoleLog('success', 'Browser launched. Please complete authentication.');
+        addConsoleLog('success', '✅ Browser launched. Please complete authentication.');
       }
     } catch (error) {
       console.error('Error starting manual login:', error);
-      addConsoleLog('error', 'Failed to launch authentication browser');
+      addConsoleLog('error', '❌ Failed to launch authentication browser');
     }
   };
 
   const handleContinueAfterLogin = async () => {
     try {
       setIsRunning(true);
-      addConsoleLog('info', 'Saving authentication session...');
+      addConsoleLog('info', '💾 Saving authentication session...');
       const response = await axios.post(`${API_BASE}/save_cookies`, loginParams);
       
       if (response.data.status === 'started') {
         setTaskId(response.data.task_id);
         setTaskStatus({ status: 'saving_cookies', progress: 10 });
         setShowLoginModal(false);
-        addConsoleLog('success', 'Session saved. Starting automation...');
+        addConsoleLog('success', '✅ Session saved. Starting automation...');
         fetchCookies();
       }
     } catch (error) {
       console.error('Error saving cookies:', error);
       setIsRunning(false);
-      addConsoleLog('error', 'Failed to save session and start automation');
+      addConsoleLog('error', '❌ Failed to save session and start automation');
     }
   };
 
   const downloadLog = async (filename: string) => {
     try {
-      addConsoleLog('info', `Downloading log file: ${filename}`);
+      addConsoleLog('info', `📥 Downloading log file: ${filename}`);
       const response = await axios.get(`${API_BASE}/logs/${filename}`, {
         responseType: 'blob'
       });
@@ -215,10 +243,10 @@ function App() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      addConsoleLog('success', `Downloaded: ${filename}`);
+      addConsoleLog('success', `✅ Downloaded: ${filename}`);
     } catch (error) {
       console.error('Error downloading log:', error);
-      addConsoleLog('error', `Failed to download: ${filename}`);
+      addConsoleLog('error', `❌ Failed to download: ${filename}`);
     }
   };
 
@@ -259,7 +287,7 @@ function App() {
 
   const clearConsole = () => {
     setConsoleLogs([]);
-    addConsoleLog('info', 'Console cleared');
+    addConsoleLog('info', '🔄 Console cleared');
   };
 
   return (
@@ -281,7 +309,7 @@ function App() {
               <Zap className="w-8 h-8 ml-3 text-green-400" />
             </div>
             <p className="text-green-600 text-lg tracking-wide">
-              &gt; ADVANCED BROWSER AUTOMATION CONTROL SYSTEM
+              ADVANCED BROWSER AUTOMATION CONTROL SYSTEM
             </p>
           </div>
 
@@ -337,7 +365,7 @@ function App() {
                 <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-green-400 mb-2 tracking-wide">
-                      &gt; SESSION IDENTIFIER
+                      SESSION IDENTIFIER
                     </label>
                     <input
                       type="text"
@@ -352,7 +380,7 @@ function App() {
                   <div className="grid grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-green-400 mb-2 tracking-wide">
-                        &gt; START ROW INDEX
+                        START ROW INDEX
                       </label>
                       <input
                         type="number"
@@ -365,7 +393,7 @@ function App() {
                     
                     <div>
                       <label className="block text-sm font-medium text-green-400 mb-2 tracking-wide">
-                        &gt; END ROW INDEX
+                        END ROW INDEX
                       </label>
                       <input
                         type="number"
@@ -417,13 +445,29 @@ function App() {
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm text-green-400">
                           <span>PROGRESS</span>
-                          <span>{taskStatus.progress}%</span>
+                          <span>{Math.round(taskStatus.progress)}%</span>
                         </div>
                         <div className="w-full bg-gray-800 rounded-full h-3 border border-green-800">
                           <div
                             className="bg-gradient-to-r from-green-600 to-green-400 h-3 rounded-full transition-all duration-300"
                             style={{ width: `${taskStatus.progress}%` }}
                           ></div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {taskStatus.current_member && taskStatus.current_family && (
+                      <div className="bg-black border border-green-800 rounded-lg p-4">
+                        <h3 className="font-medium text-green-400 mb-2 tracking-wide">CURRENT PROCESSING</h3>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="text-cyan-400">Member ID:</div>
+                            <div className="text-green-400 font-mono">{taskStatus.current_member}</div>
+                          </div>
+                          <div>
+                            <div className="text-cyan-400">Family ID:</div>
+                            <div className="text-green-400 font-mono">{taskStatus.current_family}</div>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -483,19 +527,19 @@ function App() {
                 
                 <div 
                   ref={consoleRef}
-                  className="bg-black border border-green-800 rounded-lg p-4 h-64 overflow-y-auto font-mono text-sm"
+                  className="bg-black border border-green-800 rounded-lg p-4 h-80 overflow-y-auto font-mono text-sm"
                 >
                   {consoleLogs.map((log, index) => (
-                    <div key={index} className="mb-1">
+                    <div key={index} className="mb-1 leading-relaxed">
                       <span className="text-gray-500">[{log.timestamp}]</span>
                       <span className={`ml-2 ${getConsoleLogColor(log.type)}`}>
-                        {log.type.toUpperCase()}: {log.message}
+                        {log.message}
                       </span>
                     </div>
                   ))}
                   {consoleLogs.length === 0 && (
                     <div className="text-green-600 opacity-50">
-                      &gt; Console ready for output...
+                      Console ready for output...
                     </div>
                   )}
                 </div>
