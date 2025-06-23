@@ -3,6 +3,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, WebDriverException
 import pandas as pd
 import time
 import pickle
@@ -30,7 +31,7 @@ def update_task_progress(task_id, progress, current_member=None, current_family=
             print(f"📝 {step_message}")
 
 def run_automation(cookie_name, start_row, end_row, task_id=None):
-    """Main automation function with detailed logging"""
+    """Main automation function with detailed logging and improved timeout handling"""
     try:
         update_task_progress(task_id, 5, step_message="🔍 Loading CSV data file...")
         
@@ -109,7 +110,7 @@ def run_automation(cookie_name, start_row, end_row, task_id=None):
                     update_task_progress(task_id, base_progress + 1, 
                                        step_message=f"🌐 Navigating to member removal page...")
                     driver.get("https://spr.samagra.gov.in/MemberMgmt/Pages/Remove_Member.aspx")
-                    time.sleep(1)
+
                     
                     # Fill duplicate member ID
                     update_task_progress(task_id, base_progress + 2, 
@@ -117,7 +118,7 @@ def run_automation(cookie_name, start_row, end_row, task_id=None):
                     dup_field = wait.until(EC.presence_of_element_located((By.ID, "ctl00_ctl00_SamagraMain_ContentPlaceHolder1_txtDupSamagraId")))
                     dup_field.clear()
                     dup_field.send_keys(dup)
-                    time.sleep(1)
+
                     update_task_progress(task_id, base_progress + 3, 
                                        step_message=f"✅ Duplicate member ID entered successfully")
                     
@@ -126,7 +127,7 @@ def run_automation(cookie_name, start_row, end_row, task_id=None):
                                        step_message=f"📝 Filling confirm member ID: {conf}")
                     driver.find_element(By.ID, "ctl00_ctl00_SamagraMain_ContentPlaceHolder1_txtConfirmSamagraId").clear()
                     driver.find_element(By.ID, "ctl00_ctl00_SamagraMain_ContentPlaceHolder1_txtConfirmSamagraId").send_keys(conf)
-                    time.sleep(1)
+
                     update_task_progress(task_id, base_progress + 5, 
                                        step_message=f"✅ Confirm member ID entered successfully")
                     
@@ -135,7 +136,7 @@ def run_automation(cookie_name, start_row, end_row, task_id=None):
                                        step_message=f"📝 Filling original member ID: {orig}")
                     driver.find_element(By.ID, "ctl00_ctl00_SamagraMain_ContentPlaceHolder1_txtOriSamagraId").clear()
                     driver.find_element(By.ID, "ctl00_ctl00_SamagraMain_ContentPlaceHolder1_txtOriSamagraId").send_keys(orig)
-                    time.sleep(1)
+
                     update_task_progress(task_id, base_progress + 7, 
                                        step_message=f"✅ Original member ID entered successfully")
                     
@@ -143,49 +144,103 @@ def run_automation(cookie_name, start_row, end_row, task_id=None):
                     update_task_progress(task_id, base_progress + 8, 
                                        step_message=f"🔍 Clicking show button to search for member...")
                     driver.find_element(By.ID, "ctl00_ctl00_SamagraMain_ContentPlaceHolder1_BtnShow").click()
-                    time.sleep(2)
+
                     update_task_progress(task_id, base_progress + 10, 
                                        step_message=f"🔍 Searching for member details in database...")
                     
-                    # Confirm original member ID
+                    # IMPROVED TIMEOUT HANDLING: Wait for confirm original member ID element
                     update_task_progress(task_id, base_progress + 12, 
-                                       step_message=f"📝 Confirming original member ID: {orig}")
-                    wait.until(EC.presence_of_element_located((By.ID, "ctl00_ctl00_SamagraMain_ContentPlaceHolder1_txtConfirlOriSamagraId"))).send_keys(orig)
-                    time.sleep(1)
-                    update_task_progress(task_id, base_progress + 14, 
-                                       step_message=f"✅ Original member ID confirmed successfully")
+                                       step_message=f"⏳ Waiting for confirm original member ID field (timeout: 15s)...")
+                    
+                    try:
+                        # Wait up to 15 seconds for the confirm original member ID element to appear
+                        confirm_original_field = WebDriverWait(driver, 15).until(
+                            EC.presence_of_element_located((By.ID, "ctl00_ctl00_SamagraMain_ContentPlaceHolder1_txtConfirlOriSamagraId"))
+                        )
+                        update_task_progress(task_id, base_progress + 14, 
+                                           step_message=f"✅ Confirm original member ID field found")
+                        
+                        # Fill confirm original member ID
+                        update_task_progress(task_id, base_progress + 16, 
+                                           step_message=f"📝 Confirming original member ID: {orig}")
+                        confirm_original_field.send_keys(orig)
+
+                        update_task_progress(task_id, base_progress + 18, 
+                                           step_message=f"✅ Original member ID confirmed successfully")
+                        
+                    except TimeoutException:
+                        update_task_progress(task_id, base_progress, 
+                                           step_message=f"⚠️ Timeout: Confirm original member ID field not found within 15 seconds")
+                        update_task_progress(task_id, base_progress, 
+                                           step_message=f"🔄 Reloading page and continuing to next member...")
+                        driver.refresh()
+                        fail_log.append({
+                            "familyid": fam, 
+                            "memberid": dup, 
+                            "status": "Failed", 
+                            "error": "Timeout: Confirm original member ID field not found within 15 seconds",
+                            "timestamp": datetime.now().isoformat(),
+                            "original_member": orig
+                        })
+                        continue
                     
                     # Add removal remark
-                    update_task_progress(task_id, base_progress + 16, 
+                    update_task_progress(task_id, base_progress + 20, 
                                        step_message=f"📝 Adding removal remark...")
                     driver.find_element(By.ID, "ctl00_ctl00_SamagraMain_ContentPlaceHolder1_txtRemoveRemark").send_keys("Duplicate member removal - automated process")
-                    time.sleep(1)
-                    update_task_progress(task_id, base_progress + 18, 
+
+                    update_task_progress(task_id, base_progress + 22, 
                                        step_message=f"✅ Removal remark added successfully")
                     
                     # Check confirmation checkbox
-                    update_task_progress(task_id, base_progress + 20, 
+                    update_task_progress(task_id, base_progress + 24, 
                                        step_message=f"☑️ Checking confirmation checkbox...")
                     driver.find_element(By.ID, "ctl00_ctl00_SamagraMain_ContentPlaceHolder1_chkconfirm").click()
-                    update_task_progress(task_id, base_progress + 22, 
+                    update_task_progress(task_id, base_progress + 26, 
                                        step_message=f"✅ Confirmation checkbox checked")
                     
-                    # Click delete button
-                    update_task_progress(task_id, base_progress + 24, 
-                                       step_message=f"🗑️ Clicking delete button to remove member...")
-                    wait.until(EC.element_to_be_clickable((By.ID, "ctl00_ctl00_SamagraMain_ContentPlaceHolder1_btnDelete"))).click()
-                    time.sleep(2)
+                    # IMPROVED TIMEOUT HANDLING: Wait for delete button to be clickable
+                    update_task_progress(task_id, base_progress + 28, 
+                                       step_message=f"⏳ Waiting for delete button to become clickable (timeout: 15s)...")
                     
-                    update_task_progress(task_id, base_progress + 25, 
-                                       step_message=f"✅ Member {dup} removed successfully from Family {fam}")
-                    
-                    success_log.append({
-                        "familyid": fam, 
-                        "memberid": dup, 
-                        "status": "Removed",
-                        "timestamp": datetime.now().isoformat(),
-                        "original_member": orig
-                    })
+                    try:
+                        # Wait up to 15 seconds for the delete button to become clickable
+                        delete_button = WebDriverWait(driver, 15).until(
+                            EC.element_to_be_clickable((By.ID, "ctl00_ctl00_SamagraMain_ContentPlaceHolder1_btnDelete"))
+                        )
+                        update_task_progress(task_id, base_progress + 30, 
+                                           step_message=f"✅ Delete button is now clickable")
+                        
+                        # Click delete button
+                        update_task_progress(task_id, base_progress + 32, 
+                                           step_message=f"🗑️ Clicking delete button to remove member...")
+                        delete_button.click()
+                        
+                        update_task_progress(task_id, base_progress + 35, 
+                                           step_message=f"✅ Member {dup} removed successfully from Family {fam}")
+                        
+                        success_log.append({
+                            "familyid": fam, 
+                            "memberid": dup, 
+                            "status": "Removed",
+                            "timestamp": datetime.now().isoformat(),
+                            "original_member": orig
+                        })
+                        
+                    except TimeoutException:
+                        update_task_progress(task_id, base_progress, 
+                                           step_message=f"⚠️ Timeout: Delete button not clickable within 15 seconds")
+                        update_task_progress(task_id, base_progress, 
+                                           step_message=f"🔄 Continuing to next member...")
+                        fail_log.append({
+                            "familyid": fam, 
+                            "memberid": dup, 
+                            "status": "Failed", 
+                            "error": "Timeout: Delete button not clickable within 15 seconds",
+                            "timestamp": datetime.now().isoformat(),
+                            "original_member": orig
+                        })
+                        continue
                     
                 except Exception as e:
                     error_msg = str(e)

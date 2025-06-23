@@ -1,0 +1,25 @@
+familyid,memberid,status,error,timestamp,original_member
+35659339,163745601,Failed,"Message: 
+Stacktrace:
+	GetHandleVerifier [0x0x7ff60ecdcda5+78885]
+	GetHandleVerifier [0x0x7ff60ecdce00+78976]
+	(No symbol) [0x0x7ff60ea99bca]
+	(No symbol) [0x0x7ff60eaf0766]
+	(No symbol) [0x0x7ff60eaf0a1c]
+	(No symbol) [0x0x7ff60eb44467]
+	(No symbol) [0x0x7ff60eb18bcf]
+	(No symbol) [0x0x7ff60eb4122f]
+	(No symbol) [0x0x7ff60eb18963]
+	(No symbol) [0x0x7ff60eae16b1]
+	(No symbol) [0x0x7ff60eae2443]
+	GetHandleVerifier [0x0x7ff60efb4eed+3061101]
+	GetHandleVerifier [0x0x7ff60efaf33d+3037629]
+	GetHandleVerifier [0x0x7ff60efce592+3165202]
+	GetHandleVerifier [0x0x7ff60ecf730e+186766]
+	GetHandleVerifier [0x0x7ff60ecfeb3f+217535]
+	GetHandleVerifier [0x0x7ff60ece59b4+114740]
+	GetHandleVerifier [0x0x7ff60ece5b69+115177]
+	GetHandleVerifier [0x0x7ff60eccc368+10728]
+	BaseThreadInitThunk [0x0x7ff8861ee8d7+23]
+	RtlUserThreadStart [0x0x7ff886e5c34c+44]
+",2025-06-24T04:03:51.778124,163745572

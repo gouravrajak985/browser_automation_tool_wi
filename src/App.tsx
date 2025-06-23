@@ -290,6 +290,12 @@ function App() {
     addConsoleLog('info', '🔄 Console cleared');
   };
 
+  // Helper function to clamp progress between 0 and 100
+  const getClampedProgress = (progress?: number) => {
+    if (progress === undefined) return 0;
+    return Math.min(Math.max(progress, 0), 100);
+  };
+
   return (
     <div className="min-h-screen bg-black text-green-400 font-mono">
       {/* Matrix-style background effect */}
@@ -445,12 +451,15 @@ function App() {
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm text-green-400">
                           <span>PROGRESS</span>
-                          <span>{Math.round(taskStatus.progress)}%</span>
+                          <span>{Math.round(getClampedProgress(taskStatus.progress))}%</span>
                         </div>
-                        <div className="w-full bg-gray-800 rounded-full h-3 border border-green-800">
+                        <div className="w-full bg-gray-800 rounded-full h-3 border border-green-800 overflow-hidden">
                           <div
-                            className="bg-gradient-to-r from-green-600 to-green-400 h-3 rounded-full transition-all duration-300"
-                            style={{ width: `${taskStatus.progress}%` }}
+                            className="bg-gradient-to-r from-green-600 to-green-400 h-3 rounded-full transition-all duration-300 ease-out"
+                            style={{ 
+                              width: `${getClampedProgress(taskStatus.progress)}%`,
+                              maxWidth: '100%'
+                            }}
                           ></div>
                         </div>
                       </div>

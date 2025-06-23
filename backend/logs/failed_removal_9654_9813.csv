@@ -1,0 +1,35 @@
+familyid,memberid,status,error,timestamp,original_member
+34655222,301134599,Failed,"Message: invalid element state: Element is not currently interactable and may not be manipulated
+  (Session info: chrome=137.0.7151.120)
+Stacktrace:
+	GetHandleVerifier [0x0x7ff60ecdcda5+78885]
+	GetHandleVerifier [0x0x7ff60ecdce00+78976]
+	(No symbol) [0x0x7ff60ea99bca]
+	(No symbol) [0x0x7ff60eaa15bd]
+	(No symbol) [0x0x7ff60eaa460c]
+	(No symbol) [0x0x7ff60eaa46df]
+	(No symbol) [0x0x7ff60eae6467]
+	(No symbol) [0x0x7ff60eb18b8a]
+	(No symbol) [0x0x7ff60eae2f06]
+	(No symbol) [0x0x7ff60eb18da0]
+	(No symbol) [0x0x7ff60eb4122f]
+	(No symbol) [0x0x7ff60eb18963]
+	(No symbol) [0x0x7ff60eae16b1]
+	(No symbol) [0x0x7ff60eae2443]
+	GetHandleVerifier [0x0x7ff60efb4eed+3061101]
+	GetHandleVerifier [0x0x7ff60efaf33d+3037629]
+	GetHandleVerifier [0x0x7ff60efce592+3165202]
+	GetHandleVerifier [0x0x7ff60ecf730e+186766]
+	GetHandleVerifier [0x0x7ff60ecfeb3f+217535]
+	GetHandleVerifier [0x0x7ff60ece59b4+114740]
+	GetHandleVerifier [0x0x7ff60ece5b69+115177]
+	GetHandleVerifier [0x0x7ff60eccc368+10728]
+	BaseThreadInitThunk [0x0x7ff8861ee8d7+23]
+	RtlUserThreadStart [0x0x7ff886e5c34c+44]
+",2025-06-24T01:09:43.514218,301134831
+34655222,301134833,Failed,"HTTPConnectionPool(host='localhost', port=51619): Read timed out. (read timeout=120)",2025-06-24T01:12:21.031865,301135817
+34655222,301135817,Failed,"HTTPConnectionPool(host='localhost', port=51619): Read timed out. (read timeout=120)",2025-06-24T01:14:21.045056,301134833
+34655266,160232180,Failed,"HTTPConnectionPool(host='localhost', port=51619): Read timed out. (read timeout=120)",2025-06-24T01:16:21.062760,160232375
+34655266,160232375,Failed,"HTTPConnectionPool(host='localhost', port=51619): Read timed out. (read timeout=120)",2025-06-24T01:19:28.811482,160232180
+34655575,160233323,Failed,"HTTPConnectionPool(host='localhost', port=51619): Read timed out. (read timeout=120)",2025-06-24T01:21:28.819424,160233523
+34655575,160233523,Failed,"HTTPConnectionPool(host='localhost', port=51619): Read timed out. (read timeout=120)",2025-06-24T01:24:43.066035,160233766
