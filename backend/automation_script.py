@@ -187,7 +187,7 @@ def run_automation(cookie_name, start_row, end_row, task_id=None):
                     # Add removal remark
                     update_task_progress(task_id, base_progress + 20, 
                                        step_message=f"📝 Adding removal remark...")
-                    driver.find_element(By.ID, "ctl00_ctl00_SamagraMain_ContentPlaceHolder1_txtRemoveRemark").send_keys("Duplicate member removal - automated process")
+                    driver.find_element(By.ID, "ctl00_ctl00_SamagraMain_ContentPlaceHolder1_txtRemoveRemark").send_keys("okay")
 
                     update_task_progress(task_id, base_progress + 22, 
                                        step_message=f"✅ Removal remark added successfully")
